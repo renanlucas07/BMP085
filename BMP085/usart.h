@@ -15,9 +15,9 @@ void uart_init(void)
   UBRR0L = (((F_CPU/BAUD_RATE)/16)-1);
   UCSR0B = (1<<RXEN0)|(1<<TXEN0); 		// enable Rx & Tx
   UCSR0C=  (1<<UCSZ01)|(1<<UCSZ00);  	       // config USART; 8N1
-  printf("\nUsART INITIALIZED\n");
+  printf("\nUSART INITIALIZED\n");
 }
-int uart_putch(char ch,FILE *stream)
+int uart_putch(char ch, FILE *stream)
 {
    if (ch == '\n')
     uart_putch('\r', stream);

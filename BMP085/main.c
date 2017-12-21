@@ -21,7 +21,7 @@ int main()
 {
 	stdout = stdin = &uart_str;
     uart_init();
-	i2c_init();
+	begin(ULTRAHIGHRES);
     while (1) 
     {
 		

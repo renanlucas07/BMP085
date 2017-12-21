@@ -22,7 +22,7 @@
 #define MC  0xBC
 #define MD  0xBE
 
-#define I2CADDR			  0x77
+#define I2CADDR			  0xEE
 
 #define ULTRALOWPOWER	  0
 #define STANDARD		  1
@@ -41,11 +41,36 @@ uint16_t ac4,ac5,ac6;
 
 uint8_t begin(uint8_t mode) {
 	oversampling = mode;
-	
+	i2c_init();
 	// 
-	i2c_start(0xD0);
+	if(i2c_start(I2CADDR+I2C_WRITE)){
+		printf("\nAddress registering failed\n");
+		return 1;
+	}
+	i2c_write(AC1);
+	i2c_stop();
+	i2c_start(I2CADDR+I2C_READ);
+	ac1 = i2c_readNak();
+	i2c_stop();
 	
-	if(i2c_readAck() != 0x55) return 1;
+	i2c_start(I2CADDR+I2C_WRITE);
+	i2c_write(AC2);
+	i2c_stop();
+	i2c_start(I2CADDR+I2C_READ);
+	ac2 = i2c_readNak();
+	i2c_stop();
+	
+	printf ("\n%d\n",ac1);
+	printf ("\n%d\n",ac2);/*
+	printf ("\n%d\n",ac3);
+	printf ("\n%d\n",ac4);
+	printf ("\n%d\n",ac5);
+	printf ("\n%d\n",ac6);
+	printf ("\n%d\n",b1);
+	printf ("\n%d\n",b2);
+	printf ("\n%d\n",mb);
+	printf ("\n%d\n",mv);
+	printf ("\n%d\n",md);*/
 	return 0;
 }
 
