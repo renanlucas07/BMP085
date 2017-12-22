@@ -7,9 +7,11 @@
 #define F_CPU 16000000UL
 #include <util/delay.h>
 
+#ifndef BAUD_RATE
 #define BAUD_RATE 19200
+#endif
 
-void uart_init(void)
+void uartInit(void)
 {
   UBRR0H = (((F_CPU/BAUD_RATE)/16)-1)>>8;	// set baud rate
   UBRR0L = (((F_CPU/BAUD_RATE)/16)-1);
@@ -17,22 +19,22 @@ void uart_init(void)
   UCSR0C=  (1<<UCSZ01)|(1<<UCSZ00);  	       // config USART; 8N1
   printf("\nUSART INITIALIZED\n");
 }
-int uart_putch(char ch, FILE *stream)
+int uartPutch(char ch, FILE *stream)
 {
    if (ch == '\n')
-    uart_putch('\r', stream);
+    uartPutch('\r', stream);
    while (!(UCSR0A & (1<<UDRE0)));
    UDR0=ch;
    return 0;
 }
-int uart_getch(FILE *stream)
+int uartGetch(FILE *stream)
 {
    unsigned char ch;
    while (!(UCSR0A & (1<<RXC0)));
    ch=UDR0;
 
    /* Echo the Output Back to terminal */
-   uart_putch(ch,stream);
+   uartPutch(ch,stream);
 
    return ch;
 }
