@@ -1,4 +1,4 @@
-#include <stdio.h>
+
 /*
  * BMP085.h
  *
@@ -9,6 +9,9 @@
 
 #ifndef BMP085_H_
 #define BMP085_H_
+
+#include <stdio.h>
+#include <math.h>
 
 // CALIBRATION COEFFICIENTS		// MUST BE READ FROM THE SENSOR
 #define AC1 0xAA
@@ -38,6 +41,13 @@ uint8_t oversampling;
 
 int16_t ac1,ac2,ac3,b1,b2,mb,mc,md;
 uint16_t ac4,ac5,ac6;
+
+uint8_t begin(uint8_t mode);
+uint16_t readRawTemperature(void);
+float readTemperature(void);
+uint32_t readRawPressure(void);
+int32_t readPressure(void);
+float readAbsAltitude(void);
 
 // Returns 0 if succeeds, 1 if fails
 uint8_t begin(uint8_t mode) {
@@ -74,7 +84,6 @@ uint8_t begin(uint8_t mode) {
 	ac3 |= i2cReadNack();
 	i2cStop();
 	
-	//bugado
 	i2cStart(I2CADDR+I2C_WRITE);
 	i2cWrite(AC4);
 	i2cStop();
@@ -82,7 +91,6 @@ uint8_t begin(uint8_t mode) {
 	ac4 = i2cReadAck();
 	ac4 <<= 8;
 	ac4 |= i2cReadNack();
-	
 	i2cStop();
 	
 	i2cStart(I2CADDR+I2C_WRITE);
@@ -163,9 +171,8 @@ uint8_t begin(uint8_t mode) {
 	return 0;
 }
 
-float readTemperature() {
-	int32_t UT,X1,X2;
-	float temp;
+uint16_t readRawTemperature(void) {
+	uint16_t UT;
 	i2cStart(I2CADDR+I2C_WRITE);
 	i2cWrite(CONTROL);
 	i2cWrite(READTEMPCMD);
@@ -178,14 +185,91 @@ float readTemperature() {
 	UT = i2cReadAck();
 	UT <<= 8;
 	UT |= i2cReadNack();
-	printf("\nUT = %ld",UT);
+	return UT;
+}
+
+float readTemperature(void) {
+	uint16_t UT;
+	int32_t X1,X2;
+	float temp;
+	UT = readRawTemperature();
+	printf("\nUT = %u",UT);
 	X1 = ((UT - (int32_t)ac6) * ((int32_t)ac5) >> 15);
 	X2 = (((int32_t)mc << 11) / (X1 + (int32_t)md));
 	printf("\nx1 = %ld, x2= %ld, B5 = %ld",X1, X2,X1+X2);
-	printf("\nTemp = %ld",((X1 + X2 + 8) >> 4));
+	printf("\nRaw Temp = %ld",((X1 + X2 + 8) >> 4));
 	temp = ((X1 + X2 + 8) >> 4);
 	temp /= 10.0;
 	return temp;
 } 
+
+uint32_t readRawPressure(void) {
+	uint32_t UP;
+	i2cStart(I2CADDR+I2C_WRITE);
+	i2cWrite(CONTROL);
+	i2cWrite(READPRESSURECMD + (oversampling << 6));
+	i2cStop();
+	switch (oversampling) {
+		case 0:
+			_delay_us(4500);
+			break;
+		case 1:
+			_delay_us(7500);
+			break;
+		case 2:
+			_delay_us(13500);
+			break;
+		case 3:
+			_delay_us(25500);
+			break;
+		default:
+			break;
+	}
+	i2cStart(I2CADDR+I2C_WRITE);
+	i2cWrite(DATA);
+	i2cStop();
+	i2cStart(I2CADDR+I2C_READ);
+	UP = i2cReadAck();
+	UP <<= 16;
+	UP |= (i2cReadAck() << 8);
+	UP |= i2cReadNack();
+	UP >>= (8-oversampling);
+	return UP;
+}
+
+int32_t readPressure(void) {
+	int32_t UT, UP, B3, B6, X1, X2, X3, p;
+	uint32_t B4, B7;
+	
+	UT = readRawTemperature();
+	UP = readRawPressure();
+	X1 = ((UT - (int32_t)ac6) * ((int32_t)ac5) >> 15);
+	X2 = (((int32_t)mc << 11) / (X1 + (int32_t)md));
+	B6 = (X1 + X2) - 4000;
+	X1 = ((int32_t)b2 * ((B6 * B6) >> 12 )) >> 11;
+	X2 = ((int32_t)ac2 * B6) >> 11;
+	X3 = X1 + X2;
+	B3 = ((((int32_t)ac1 * 4 + X3) << oversampling) + 2) / 4;
+	X1 = ((int32_t) ac3 * B6) >> 13;
+	X2 = ((int32_t)b1 * ((B6 * B6) >> 12)) >> 16;
+	X3 = ((X1 + X2) + 2) >> 2;
+	B4 = ((uint32_t)ac4 * (uint32_t)(X3 + 32768)) >> 15;
+	B7 = ((uint32_t)UP - B3) * (uint32_t)(50000UL >> oversampling);
+	if (B7 < 0x80000000) {
+		p = (B7 * 2)/B4;
+	} else {
+		p = (B7/B4) * 2;
+	}
+	X1 = (p >> 8) * (p >> 8);
+	X1 = (X1 * 3038) >> 16;
+	X2 = (-7357 * p) >> 16;
+	p = p + ((X1 + X2 + (int32_t)3791) >> 4);
+	return p;
+}
+
+float readAbsAltitude(void) {
+	float p = readPressure();
+	return (44330 * (1.0 - pow((p/101325), 0.1903)));
+}
 
 #endif /* BMP085_H_ */

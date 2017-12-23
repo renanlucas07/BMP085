@@ -18,19 +18,33 @@
 
 FILE uart_str = FDEV_SETUP_STREAM(uartPutch, uartGetch, _FDEV_SETUP_RW);
 
-int main()
+int main(void)
 {
-	float temp;
+	float temp, alt;
 	int pi, pd;
+	int32_t p;
+	uint32_t UP;
 	stdout = stdin = &uart_str;
     uartInit();
 	begin(ULTRAHIGHRES);
     while (1) 
     {
 		temp = readTemperature();
+		//Gambs
 		pi = temp;
 		pd = (temp - pi)*10;
-		printf("\n%d.%d",pi,pd);
+		printf("\nTempratura real = %d.%doC\n",pi,pd);
+		
+		UP = readRawPressure();
+		printf("\nRaw Pressure = %lu",UP);
+		p =readPressure();
+		printf("\nPressao = %ld", p);
+		
+		alt = readAbsAltitude();
+		//Gambs
+		pi = alt;
+		pd = (alt - pi)*10;
+		printf("\nAltidude = %d.%dm\n",pi,pd);
     }
 	return 0;
 }
