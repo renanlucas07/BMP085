@@ -1,4 +1,4 @@
-/*************************************************************************
+﻿/*************************************************************************
 * Title:    I2C master library using hardware TWI interface
 * Author:   Peter Fleury <pfleury@gmx.ch>  http://jump.to/fleury
 * File:     $Id: twimaster.c,v 1.4 2015/01/17 12:16:05 peter Exp $
@@ -9,6 +9,7 @@
 #include <inttypes.h>
 #include <stdio.h>
 #include <compat/twi.h>
+#include "i2cmaster.h"
 
 
 

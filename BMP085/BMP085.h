@@ -3,7 +3,7 @@
  * BMP085.h
  *
  * Created: 21/12/2017 11:00:27
- *  Author: Renan Lucas
+ * Author: Renan Lucas
  */ 
 
 
@@ -12,6 +12,8 @@
 
 #include <stdio.h>
 #include <math.h>
+#include "i2cmaster.h"
+#include "usart.h"
 
 // CALIBRATION COEFFICIENTS		// MUST BE READ FROM THE SENSOR
 #define AC1 0xAA
@@ -49,7 +51,7 @@ uint32_t readRawPressure(void);
 int32_t readPressure(void);
 float readAbsAltitude(void);
 
-// Returns 0 if succeeds, 1 if fails
+// Reads the constants and Returns 0 if succeeds, 1 if fails
 uint8_t begin(uint8_t mode) {
 	oversampling = mode;
 	i2cInit();
@@ -171,6 +173,7 @@ uint8_t begin(uint8_t mode) {
 	return 0;
 }
 
+// Reads the raw temperature value
 uint16_t readRawTemperature(void) {
 	uint16_t UT;
 	i2cStart(I2CADDR+I2C_WRITE);
@@ -188,6 +191,7 @@ uint16_t readRawTemperature(void) {
 	return UT;
 }
 
+// Reads the true temperature value in oC
 float readTemperature(void) {
 	uint16_t UT;
 	int32_t X1,X2;
@@ -203,6 +207,7 @@ float readTemperature(void) {
 	return temp;
 } 
 
+// Reads the raw pressure value
 uint32_t readRawPressure(void) {
 	uint32_t UP;
 	i2cStart(I2CADDR+I2C_WRITE);
@@ -237,6 +242,7 @@ uint32_t readRawPressure(void) {
 	return UP;
 }
 
+// Reads the true pressure value in Pa
 int32_t readPressure(void) {
 	int32_t UT, UP, B3, B6, X1, X2, X3, p;
 	uint32_t B4, B7;
@@ -267,6 +273,7 @@ int32_t readPressure(void) {
 	return p;
 }
 
+// Estimates the Absolute Altitude in meters, based on the pressure value
 float readAbsAltitude(void) {
 	float p = readPressure();
 	return (44330 * (1.0 - pow((p/101325), 0.1903)));
